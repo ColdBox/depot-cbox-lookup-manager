@@ -1,0 +1,29 @@
+<!-- Use the Elements below to merge them into your coldbox.xml -->
+
+<YourSettings>
+	<!-- Lookups Settings -->
+	<!--
+		Sample
+		<Setting name="lookups_tables"				value="{'Roles':'security.Role', 
+														'Users':'security.User',
+														'Permissions':'security.Permission'}" />
+	-->
+	<Setting name="lookups_tables"				value="" />		
+	<Setting name="lookups_imgPath"				value="includes/lookups/images" />
+	<Setting name="lookups_cssPath"				value="includes/lookups/styles" />
+	<Setting name="lookups_jsPath"				value="includes/lookups/js" />
+	<!-- Leave empty if handlers and views not in a package -->
+	<Setting name="lookups_packagePath"			value="" />		
+</YourSettings>
+
+<Layouts>
+	<!-- Lookups Layout -->
+	<Layout name="Lookups" file="Layout.Lookups.cfm">
+		<Folder>lookups</Folder>
+	</Layout>
+</Layouts>
+
+<Datasources>
+	<!-- This is just to load the ORM with the right DSN, retouch as needed -->
+	<Datasource alias="lookups" name="lookups"  dbtype="mysql"  username="" password="" />
+</Datasources>

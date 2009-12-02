@@ -1,0 +1,430 @@
+<cfoutput>
+<!--- js --->
+<cfsavecontent variable="js">
+<cfoutput>
+<script type="text/javascript" language="javascript">
+	$(document).ready(function() {
+		/* Activate RTE */
+		$('.rte-zone').rte("#getSetting('lookups_cssPath')#/lookups.css","#rc.imgPath#/rte/");  
+		 
+		//Activate Date Pickers
+		$(".datepicker").datepicker({ 
+		    showOn: "both"
+		});
+		
+		/* Form Validation */
+		$('##editform').formValidation({
+			err_class 	: "invalidLookupInput",
+			err_list	: true,
+			callback	: 'prepareSubmit'
+		});
+		
+		<cfif rc.mdDictionary.hasOneToMany>
+		<cfloop from="1" to="#arrayLen(rc.mdDictionary.oneToManyArray)#" index="relIndex">
+		// call the tablesorter plugin
+		$("##onetomany_query_#rc.mdDictionary.oneToManyArray[relIndex].alias#").tablesorter();
+		</cfloop>
+		</cfif>
+	});
+	function submitForm(){
+		$('##editform').submit();		
+	}
+	function prepareSubmit(){
+		$('##_buttonbar').slideUp("fast");
+		$('##_loader').fadeIn("slow");		
+		return true;
+	}
+	function submitM2M(relation,addRelation){
+		//Add Relation Check
+		var txtAddRelation = $("##add"+relation+"Form > input[@name='addRelation']");
+		txtAddRelation.val(addRelation);
+		$('##_buttonbar_'+relation).slideUp("fast");
+		$('##_loader_'+relation).fadeIn("slow");
+		$('##add'+relation+'Form').submit();
+	}
+	function confirmDelete(){
+		if ( confirm("Do you wish to remove the selected record(s)? This cannot be undone!") ){
+			return true;
+		} 
+		else{
+			return false;
+		}
+	}
+</script>
+</cfoutput>
+</cfsavecontent>
+<cfhtmlhead text="#js#">
+<cfoutput>
+<!--- Title --->
+<h2><img src="#rc.imgPath#/cog.png" align="absmiddle"> ColdBox Lookup Manager > Edit Record</h2>
+<!--- BACK --->
+<div class="backbutton">
+	<img src="#rc.imgPath#/arrow_left.png" align="absmiddle">
+	<a href="#event.buildLink(rc.xehLookupList,0)#/lookup/#rc.lookup#">Back</a>
+</div>
+<p>Editing <strong>#rc.lookup#</strong>. Please fill out all the fields.</p>
+
+<!--- Add Form --->
+<form name="editform" id="editform" action="#event.buildLink(rc.xehLookupCreate,0)#" method="post">
+
+<!--- Lookup Class Choosen to Add --->
+<input type="hidden" name="lookup" id="lookup" value="#rc.lookup#">
+<!--- Primary Key Value --->
+<input type="hidden" name="ID" value="#rc.pkValue#">
+
+<fieldset>
+<legend><strong>Edit Form</strong></legend>
+<div id="lookupFields">
+	
+	<!--- Primary Key --->
+	<label class="primaryKeyLabel">#rc.mdDictionary.PK#:</label>
+	<label class="primaryKey">#htmlEditFormat(rc.pkValue)#</label>
+	
+	<!--- Loop Through Foreign Keys, to create Drop Downs --->
+	<cfloop from="1" to="#arrayLen(rc.mdDictionary.ManyToOneArray)#" index="i">
+		<!--- Get the m20 query --->
+		<cfset qListing = rc["q#rc.mdDictionary.ManyToOneArray[i].alias#"]>
+		<cfif NOT evaluate("rc.oLookup.has#rc.mdDictionary.ManyToOneArray[i].alias#()")>
+			<cfset tmpValue = "">
+		<cfelse>
+			<cfset tmpValue = evaluate("rc.oLookup.get#rc.mdDictionary.ManyToOneArray[i].alias#().get#rc.mdDictionary.ManyToOneArray[i].PK#()")>
+		</cfif>
+		<label class="labelNormal">#rc.mdDictionary.ManyToOneArray[i].alias#</label>
+		<select name="fk_#rc.mdDictionary.ManyToOneArray[i].alias#"
+				id="fk_#rc.mdDictionary.ManyToOneArray[i].alias#">
+			<option <cfif tmpValue eq "">selected="selected"</cfif>></option>
+			<cfloop query="qListing">
+				<option value="#qListing[rc.mdDictionary.ManyToOneArray[i].PK][currentrow]#" <cfif qListing[rc.mdDictionary.ManyToOneArray[i].PK][currentrow] eq tmpValue>selected</cfif>>
+					<cfloop list="#rc.mdDictionary.ManyToOneArray[i].DisplayColumn#" index="col">
+					#qListing[col][currentRow]# &nbsp;
+					</cfloop>
+				</option>
+			</cfloop>
+		</select>
+		<br/>
+	</cfloop>
+	<!--- Parent One To Many --->
+	<cfloop from="1" to="#arrayLen(rc.mdDictionary.ParentOneToManyArray)#" index="i">
+		<cfif structKeyExists(rc.oLookup, "hasParent#rc.mdDictionary.ManyToOneArray[i].alias#")>
+		
+		
+		<!--- Get the m20 query --->
+		<cfset qListing = rc["q#rc.mdDictionary.ParentOneToManyArray[i].alias#"]>
+		<cfif NOT evaluate("rc.oLookup.hasParent#rc.mdDictionary.ManyToOneArray[i].alias#()")>
+			<cfset tmpValue = "">
+		<cfelse>
+			<cfset tmpValue = evaluate("rc.oLookup.getParent#rc.mdDictionary.ParentOneToManyArray[i].alias#().get#rc.mdDictionary.ParentOneToManyArray[i].PK#()")>
+		</cfif>
+		<label class="labelNormal">#rc.mdDictionary.ParentOneToManyArray[i].alias#</label>
+		<select name="fk_#rc.mdDictionary.ParentOneToManyArray[i].alias#"
+				id="fk_#rc.mdDictionary.ParentOneToManyArray[i].alias#">
+			<option <cfif tmpValue eq "">selected="selected"</cfif>></option>
+			<cfloop query="qListing">
+				<option value="#qListing[rc.mdDictionary.ParentOneToManyArray[i].PK][currentrow]#" <cfif qListing[rc.mdDictionary.ParentOneToManyArray[i].PK][currentrow] eq tmpValue>selected</cfif>>
+					<cfloop list="#rc.mdDictionary.ParentOneToManyArray[i].DisplayColumn#" index="col">
+					#qListing[col][currentRow]# &nbsp;
+					</cfloop>
+				</option>
+			</cfloop>
+		</select>
+		<br/>
+		
+		</cfif>
+	</cfloop>
+
+	<!--- Loop through Fields --->
+	<cfloop from="1" to="#ArrayLen(rc.mdDictionary.FieldsArray)#" index="i">
+		<!--- Set value --->
+		<cfset tmpValue = evaluate("rc.oLookup.get#rc.mdDictionary.FieldsArray[i].alias#()")>
+		<!--- Do not show the ignore Updates and PK--->
+		<cfif not rc.mdDictionary.FieldsArray[i].primaryKey and not rc.mdDictionary.FieldsArray[i].ignoreUpdate>
+			<!--- PROPERTY LABEL --->
+			<label class="labelNormal">
+				#rc.mdDictionary.FieldsArray[i].alias#
+				<cfif not rc.mdDictionary.FieldsArray[i].nullable>*</cfif>
+			</label>
+			<!--- Help Text --->
+			<label class="helptext">#rc.mdDictionary.FieldsArray[i].helptext#</label>
+
+			<!--- BOOLEAN TYPES --->
+			<cfif rc.mdDictionary.FieldsArray[i].datatype eq "boolean">
+				<cfif rc.mdDictionary.FieldsArray[i].html eq "radio">
+					<input type="radio"
+							 name="#rc.mdDictionary.FieldsArray[i].alias#"
+							 id="#rc.mdDictionary.FieldsArray[i].alias#"
+							 value="1"
+							 <cfif tmpValue>checked="checked"</cfif>>
+					<label class="rbLabel" for="#rc.mdDictionary.FieldsArray[i].alias#">Yes</label>
+
+					<input type="radio"
+							 name="#rc.mdDictionary.FieldsArray[i].alias#"
+							 id="#rc.mdDictionary.FieldsArray[i].alias#"
+							 value="0"
+							 <cfif tmpValue eq false>checked="checked"</cfif>>
+					<label class="rbLabel" for="#rc.mdDictionary.FieldsArray[i].alias#">No</label>
+				<cfelse>
+					<select name="#rc.mdDictionary.FieldsArray[i].alias#"
+							id="#rc.mdDictionary.FieldsArray[i].alias#"
+							class="booleanSelect">
+						<option value="1" <cfif tmpValue>selected="selected"</cfif>>True</option>
+						<option value="0" <cfif not tmpValue>selected="selected"</cfif>>False</option>
+					</select>
+				</cfif>
+			<!--- DATE TYPE --->
+			<cfelseif rc.mdDictionary.FieldsArray[i].datatype eq "date">
+			 <input type="text" size="25" value="#dateFormat(tmpValue,"mm/dd/yyyy")# #timeformat(tmpvalue)#" 
+					name="#rc.mdDictionary.FieldsArray[i].alias#"
+					id="#rc.mdDictionary.FieldsArray[i].alias#"
+					required="#iif(rc.mdDictionary.FieldsArray[i].nullable,false,true)#"
+					class="datepicker"/> 
+			  <br />
+			<cfelse>
+				<cfif rc.mdDictionary.FieldsArray[i].html eq "text">
+					<input type="text"
+						   name="#rc.mdDictionary.FieldsArray[i].alias#"
+						   id="#rc.mdDictionary.FieldsArray[i].alias#"
+						   value="#tmpValue#"
+						   size="50"
+						   required="#iif(rc.mdDictionary.FieldsArray[i].nullable,false,true)#"
+						   <cfif len(rc.mdDictionary.FieldsArray[i].validate)>
+						   	mask="#rc.mdDictionary.FieldsArray[i].validate#"
+						   </cfif>>
+				<cfelseif rc.mdDictionary.FieldsArray[i].html eq "password">
+					<input type="password"
+							 name="#rc.mdDictionary.FieldsArray[i].alias#"
+							 id="#rc.mdDictionary.FieldsArray[i].alias#"
+							 value="#tmpValue#"
+							 size="50"
+							 required="#iif(rc.mdDictionary.FieldsArray[i].nullable,false,true)#">
+				<cfelseif rc.mdDictionary.FieldsArray[i].html eq "textarea">
+					<textarea name="#rc.mdDictionary.FieldsArray[i].alias#"
+								id="#rc.mdDictionary.FieldsArray[i].alias#"
+								rows="10"
+								required="#iif(rc.mdDictionary.FieldsArray[i].nullable,false,true)#"
+							 	>#tmpValue#</textarea>
+				<cfelseif rc.mdDictionary.FieldsArray[i].html eq "richtext">
+					<textarea name="#rc.mdDictionary.FieldsArray[i].alias#"
+								id="#rc.mdDictionary.FieldsArray[i].alias#"
+								class="rte-zone"
+							  	required="#iif(rc.mdDictionary.FieldsArray[i].nullable,false,true)#"
+							 	>#tmpValue#</textarea>
+				</cfif>
+			</cfif>
+			<br />
+		</cfif>
+	</cfloop>
+</div>
+</fieldset>
+
+<!--- Mandatory Label --->
+<p>* Mandatory Fields</p>
+<br />
+
+<!--- Loader --->
+<div id="_loader" class="formloader">
+	<p>
+		Submitting...<br />
+		<img src="#rc.imgPath#/ajax-loader-horizontal.gif" align="absmiddle">
+		<img src="#rc.imgPath#/ajax-loader-horizontal.gif" align="absmiddle">
+	</p>
+</div>
+
+<!--- Create / Cancel --->
+<div id="_buttonbar">
+	<a href="#event.buildLink(rc.xehLookupList,0)#/lookup/#rc.lookup#" class="buttonLinks">
+		<span>
+			<img src="#rc.imgPath#/cancel.png" border="0" align="absmiddle" alt="Cancel" />
+			Cancel
+		</span>
+	</a>
+	&nbsp;
+	<a href="javascript:submitForm()" class="buttonLinks">
+		<span>
+			<img src="#rc.imgPath#/accept.png" border="0" align="absmiddle" alt="Update" />
+			Update Record
+		</span>
+	</a>
+</div>
+<br />
+</form>
+
+<!--- ************************************************************************************** --->
+<!--- ************************************************************************************** --->
+<!--- One To Many Relations --->
+<cfif rc.mdDictionary.hasOneToMany>
+	<!--- Title --->
+	<h3>One to Many Manager(s)</h3>
+	<cfloop from="1" to="#arrayLen(rc.mdDictionary.oneToManyArray)#" index="relIndex">
+		<!--- Working MD M2M Array --->
+		<cfset thisArray = rc.mdDictionary.oneToManyArray[relIndex]>
+		<cfset thisMD = rc["md#thisArray.alias#"]>
+		<!--- Current M2M Listing Query --->
+		<cfset qListing = rc["q#thisArray.alias#"]>
+		<!--- Link To Class --->
+		<cfloop collection="#rc.systemLookups#" item="key">
+			<cfif rc.systemLookups[key] eq thisArray.linkToClass>
+				<cfset thisLookupClass = key>
+				<cfbreak>
+			</cfif>
+		</cfloop>
+		<fieldset>
+		<legend >#thisArray.alias#</legend>
+		
+		<!--- Add / Delete Button Bar --->
+		<div id="listButtonBar">
+			<a href="#event.buildLink(rc.xehLookupCreateForm,0)#/lookup/#thisLookupClass#" class="buttonLinks">
+				<span>
+					<img src="#rc.imgPath#/add.png" border="0" align="absmiddle" alt="Add" />
+					Add #thisArray.LinkToClass#
+				</span>
+			</a>
+		</div>
+		<!--- Loop Throught Recordcount --->
+		<cfif qListing.recordcount>
+		<table class="tablesorter" width="100%" id="onetomany_query_#thisArray.alias#" cellspacing="1" cellpadding="0" border="0">
+			<thead>
+			<!--- Display Fields Found in Query --->
+			<tr>
+				<!--- All Other Fields --->
+				<cfloop from="1" to="#ArrayLen(thisMD.FieldsArray)#" index="i">
+					<!---Don't show display eq false --->
+					<cfif thisMD.FieldsArray[i].display and not thisMD.FieldsArray[i].primaryKey>
+						<th class="{sorter: 'text'}">#thisMD.FieldsArray[i].alias#</th>
+					</cfif>
+				</cfloop>
+				<th id="actions" class="{sorter: false}">ACTIONS</th>
+			</tr>
+			</thead>
+			<!--- Loop Through Query Results --->
+			<tbody>
+			<cfloop query="qListing">
+			<tr <cfif qListing.CurrentRow MOD(2) eq 1> class="even"</cfif>>
+				<!--- Loop Through Columns --->
+				<cfloop from="1" to="#ArrayLen(thisMD.FieldsArray)#" index="i">
+					<!---Don't show display eq false --->
+					<cfif thisMD.FieldsArray[i].display and not thisMD.FieldsArray[i].primaryKey>
+					<td>
+						<cfif thisMD.FieldsArray[i].datatype eq "boolean">
+							#yesnoFormat(qListing[thisMD.FieldsArray[i].Alias][currentrow])#
+						<cfelseif thisMD.FieldsArray[i].datatype eq "date">
+							#dateFormat(qListing[thisMD.FieldsArray[i].Alias][currentrow],"MMM-DD-YYYY")#
+						<cfelse>
+							#qListing[thisMD.FieldsArray[i].Alias][currentrow]#
+						</cfif>
+					</td>
+					</cfif>
+				</cfloop>
+	
+				<!--- Display Commands --->
+				<td align="center">
+					<!--- Edit Record --->
+					<a href="#event.buildLink(rc.xehLookupEdit,0)#/lookup/#thisArray.alias#/id/#qListing[thisMD.PK][currentrow]#" title="Edit Record">
+					<img src="#rc.imgPath#/page_edit.png" border="0" align="absmiddle" title="Edit Record">
+					</a>
+					<!--- Delete Record --->
+					<a href="#event.buildLink(rc.xehLookupDelete,0)#/lookup/#thisArray.alias#/lookupid/#qListing[thisMD.PK][currentrow]#" onClick="return confirmDelete()" title="Remove Record">
+					<img id="delete_#qListing[thisMD.PK][currentrow]#" src="#rc.imgPath#/bin_closed.png" border="0" align="absmiddle" title="Remove Record">
+					</a>
+				</td>
+	
+			</tr>
+			</cfloop>
+			</tbody>
+		</table>
+		<cfelse>
+		<em>No Records Found.</em>
+		</cfif>
+		
+		</fieldset>
+		
+	</cfloop>
+</cfif>
+
+
+<!--- ************************************************************************************** --->
+<!--- ************************************************************************************** --->
+<!--- Many To Many Relations --->
+<cfif rc.mdDictionary.hasManyToMany>
+	<!--- Title --->
+	<h3>Many to Many Manager(s)</h3>
+
+	<cfloop from="1" to="#arrayLen(rc.mdDictionary.manytomanyarray)#" index="relIndex">
+		<!--- Working MD M2M Array --->
+		<cfset thisArray = rc.mdDictionary.manytomanyarray[relIndex]>
+		<!--- Current M2M Listing Query --->
+		<cfset qListing = rc["q#thisArray.alias#"]>
+		<!--- Relation Array --->
+		<cfset relationArray = rc["#thisArray.alias#Array"]>
+
+		<!--- Display Relation Form --->
+		<form name="add#thisArray.alias#Form" id="add#thisArray.alias#Form" action="#event.buildLink(rc.xehLookupUpdateRelation,0)#" method="post">
+			<!--- Lookup Class Choosen to Add --->
+			<input type="hidden" name="lookup" id="lookup" value="#rc.lookup#">
+			<!--- Primary Key Value --->
+			<input type="hidden" name="ID" value="#rc.pkValue#">
+			<!--- Alias Name --->
+			<input type="hidden" name="linkAlias" value="#thisArray.alias#">
+			<input type="hidden" name="linkTO"    value="#thisArray.linkToTO#">
+			<input type="hidden" name="addRelation" id="addRelation" value="1">
+
+			<fieldset>
+				<legend><a name="m2m_#thisArray.alias#"></a><strong>#thisArray.alias# Relation</strong></legend>
+
+				<!--- Loader --->
+				<div id="_loader_#thisArray.alias#" class="formloader">
+					Submitting...<br />
+					<img src="#rc.imgPath#/ajax-loader-horizontal.gif" align="absmiddle">
+					<img src="#rc.imgPath#/ajax-loader-horizontal.gif" align="absmiddle">
+				</div>
+				<!--- Control Bar --->
+				<div id="_buttonbar_#thisArray.alias#">
+					<!--- M2M Drop Down Listing --->
+					<select name="m2m_#thisArray.alias#" id="m2m_#thisArray.alias#">
+						<cfloop query="qListing">
+						<option value="#qListing[thisArray.linkToPK][currentrow]#">#qListing[thisArray.linkToSortBy][currentrow]#</option>
+						</cfloop>
+					</select>
+					<!--- Add Button --->
+					<cfif qListing.recordcount>
+						<a href="javascript:submitM2M('#thisArray.alias#',1)" class="buttonLinks">
+							<span>
+								<img src="#rc.imgPath#/add.png" border="0" align="absmiddle" alt="Add Relation" />
+								Add Relation
+							</span>
+						</a>
+					</cfif>
+					<cfif arraylen(relationArray)>
+					<!--- Remove Button --->
+					&nbsp;
+					<a href="javascript:submitM2M('#thisArray.alias#',0)" class="buttonLinks">
+						<span>
+							<img src="#rc.imgPath#/bin_closed.png" border="0" align="absmiddle" alt="Remove Relation" />
+							Remove Relation(s)
+						</span>
+					</a>
+					</cfif>
+				</div>
+
+				<br />
+				<!--- Actual m2m for this lookup --->
+				<cfif arraylen(relationArray)>
+					<p><em> #arrayLen(relationArray)# records found.</em></p>
+					<!--- Create Entry --->
+					<cfloop from="1" to="#arrayLen(relationArray)#" index="i">
+						<cfset thisRelationTO = relationArray[i]>
+						<cfset thisRelationPKID = evaluate('thisRelationTO.get#thisArray.linkToPK#()')>
+						<cfset thisRelationSortBy = evaluate('thisRelationTO.get#thisArray.linkToSortBy#()')>
+
+						<input type="checkbox" name="m2m_#thisArray.alias#_id" id="m2m_#thisArray.alias#_id" value="#thisRelationPKID#" />
+						<label class="relationLabel" for="m2m_#thisArray.alias#_id">#thisRelationSortBy#</label><br/>
+					</cfloop>
+				<cfelse>
+					<p><em>No #thisArray.alias# relation records found.</em></p>
+				</cfif>
+
+			</fieldset>
+		</form>
+	</cfloop>
+</cfif>
+
+</cfoutput>
