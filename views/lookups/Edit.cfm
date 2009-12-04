@@ -1,4 +1,3 @@
-<cfoutput>
 <!--- js --->
 <cfsavecontent variable="js">
 <cfoutput>
