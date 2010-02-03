@@ -104,12 +104,12 @@
 	</cfloop>
 	<!--- Parent One To Many --->
 	<cfloop from="1" to="#arrayLen(rc.mdDictionary.ParentOneToManyArray)#" index="i">
-		<cfif structKeyExists(rc.oLookup, "hasParent#rc.mdDictionary.ManyToOneArray[i].alias#")>
+		<cfif structKeyExists(rc.oLookup, "hasParent#rc.mdDictionary.ParentOneToManyArray[i].alias#")>
 		
 		
 		<!--- Get the m20 query --->
 		<cfset qListing = rc["q#rc.mdDictionary.ParentOneToManyArray[i].alias#"]>
-		<cfif NOT evaluate("rc.oLookup.hasParent#rc.mdDictionary.ManyToOneArray[i].alias#()")>
+		<cfif NOT evaluate("rc.oLookup.hasParent#rc.mdDictionary.ParentOneToManyArray[i].alias#()")>
 			<cfset tmpValue = "">
 		<cfelse>
 			<cfset tmpValue = evaluate("rc.oLookup.getParent#rc.mdDictionary.ParentOneToManyArray[i].alias#().get#rc.mdDictionary.ParentOneToManyArray[i].PK#()")>
